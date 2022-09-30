@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://drive.google.com/uc?export=view&id=1mQgqXjwwLUaxM5MvheP0_M3OLXv-H8Wx">
+        <title></title>
+        <meta charset="utf-8" name="viewport" 
+        content= "width=device-width, initial-scale=1.0">
+    </head>
+    <body onload="getDatas()">
+        <div id="refresh_date" style="color:green;"></div>
+        <br>
+        <button class="btn" onclick="toggleDetails(this)">Show All Details</button>
+        <ul id="data_list">
+        </ul>
+        <script>
+            let data_json = "";
+            var timeDelay = 2500;
+            let loadedNotImportantDatas = false;
+            var aDay = 24*60*60*1000;
+            var count=0;
+            let newChanges = false;
+            function toggleDetails(param){
+                
+                if(param.innerText=="Show All Details")
+                    param.innerText = "Hide All Details";
+                else
+                    param.innerText = "Show All Details";
+                // [5,11,12,1,4,6,9,10,14,8,7,13,15]
+                var element = document.getElementById("reward_5");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_11");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_12");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_1");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_4");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_6");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_9");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_10");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_10");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_14");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_8");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_7");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_13");
+                element.classList.toggle("show_always");
+                element = document.getElementById("reward_15");
+                element.classList.toggle("show_always");
+                
+            }
+            function prepareDownload(event){
+                var reward_number = event.target;
+                reward_number=reward_number.id.toString().replace('reward_btn_','');
+                let tmp_data = JSON.parse(data_json);
+                //
+                if(tmp_data[reward_number]['reward_logs'].hasOwnProperty('changes_logs')){
+                    var change_logs = tmp_data[reward_number]['reward_logs']['changes_logs']
+                    var dateStarted = tmp_data[reward_number]['reward_logs']['time_started']
+                    var dateStartObj = new Date(dateStarted)
+                    for(var i=0;i<change_logs.length;i++){
+                        var dateStr 
+                        var dateObj 
+                        if(change_logs.length>=1){
+                            if( i>0 ){
+                                dateStr = change_logs[i].time_checked;
+                                dateObj = new Date(dateStr);
+
+                                date_future = dateObj;
+                                date_now = new Date(change_logs[i-1].time_checked);
+                            }else{
+                                dateStr = change_logs[i].time_checked;
+                                dateObj = new Date(dateStr);
+
+                                date_future = dateObj;
+                                date_now = dateStartObj;
+                            }
+                            seconds = Math.floor((date_future - (date_now))/1000);
+                            minutes = Math.floor(seconds/60);
+                            hours = Math.floor(minutes/60);
+                            days = Math.floor(hours/24);
+                            
+                            hours = hours-(days*24);
+                            minutes = minutes-(days*24*60)-(hours*60);
+                            seconds = seconds-(days*24*60*60)-(hours*60*60)-(minutes*60);
+                            var addDataJson = " [ " + formatDate2(date_future) + " - " + formatDate2(date_now) +" ] " + days +" Day(s) "+   hours +" Hour(s) " + minutes + " Minute(s) " + seconds + " Second(s)";
+                            
+                            tmp_data[reward_number]['reward_logs']['changes_logs'][i]['date_details'] = addDataJson
+                        }
+
+                        
+                        
+                    }
+                    download('reward_'+reward_number,JSON.stringify(tmp_data[reward_number]['reward_logs'],null,'\t'))
+                }
+                
+            }
+            function download(filename, text) {
+                var element = document.createElement('a');
+                element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                element.setAttribute('download', filename);
+
+                element.style.display = 'none';
+                document.body.appendChild(element);
+
+                element.click();
+
+                document.body.removeChild(element);
+            }
+            async function getDatas() {
+                prepareDatas();
+                requestData();
+                loopCheckData();
+            }
+            function loopCheckData(){
+                setTimeout(function(){
+                    updateDatas()
+                    loopCheckData()
+                    const timeFormat = formatDate(new Date(Date.now()))
+                    $('#refresh_date').text(timeFormat + ` [${count++}] `);
+                }, timeDelay);
+            }
+            function updateDatas(){
+                $.ajax({
+                    type: 'GET',
+                    url: '\\file_read',
+                    success: function (jsonData) {
+                        if(data_json!=jsonData){
+                            console.log('new updates')
+                            newChanges=true;
+                        }else{
+                            console.log('no updates')
+                            newChanges=false;
+                        }
+                        data_json = jsonData
+                    }
+                });
+                let tmp_data = JSON.parse(data_json);
+                for (const data in tmp_data) {
+                    var rewardLogs = tmp_data[data]['reward_logs'];
+                    var rewardImg = "https://www.winston.ph/"+rewardLogs['image'];
+                    //not important datas 
+                    var rewardElement = $('#reward_'+data);
+                    if(!loadedNotImportantDatas){
+                        rewardElement.find('.main_image')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.reward_name')[0].innerText=rewardLogs['name']
+                        rewardElement.find('.updated_one_img')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.updated_two_img')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.updated_three_img')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.updated_one_icon')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.updated_two_icon')[0].setAttribute("src",rewardImg)
+                        rewardElement.find('.updated_three_icon')[0].setAttribute("src",rewardImg)
+                    }
+                    var rewardQuantity = 0;
+                    if(rewardLogs.hasOwnProperty('changes_logs')){
+                        var changes_logs_list = rewardLogs['changes_logs'];
+                        rewardQuantity = changes_logs_list[changes_logs_list.length-1]['quantity'];
+                        rewardElement.find('.update_value')[0].innerHTML=`${changes_logs_list.length}<span>Updates</span>`
+                        if(changes_logs_list.length>=3){
+                            var rewardQuantityPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-1]['quantity'])
+                            var rewardQuantityPrevPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-2]['quantity'])
+                            var rewardQuantityPrevPrevPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-3]['quantity'])
+
+                            var rewardTimePrev = changes_logs_list[changes_logs_list.length-1]['time_checked']
+                            var rewardTimePrevPrev = changes_logs_list[changes_logs_list.length-2]['time_checked']
+                            var rewardTimePrevPrevPrev = changes_logs_list[changes_logs_list.length-3]['time_checked']
+
+                            rewardElement.find('.updated_one_quantity_value')[0].innerText = rewardQuantityPrev
+                            rewardElement.find('.updated_two_quantity_value')[0].innerText = rewardQuantityPrevPrev
+                            rewardElement.find('.updated_three_quantity_value')[0].innerText = rewardQuantityPrevPrevPrev
+
+                            //Time inbetween data
+                            //Time inbetween data
+                            const timeFormat1 = formatDate(new Date(rewardTimePrev));
+                            const timeFormat2 = formatDate(new Date(rewardTimePrevPrev));
+                            const timeFormat3 = formatDate(new Date(rewardTimePrevPrevPrev));
+                            rewardElement.find('.updated_one_time_value')[0].innerText = timeFormat1
+                            rewardElement.find('.updated_two_time_value')[0].innerText = timeFormat2
+                            rewardElement.find('.updated_three_time_value')[0].innerText = timeFormat3
+                        }else if(changes_logs_list.length==2){
+                            var rewardQuantityPrevPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-1]['quantity'])
+                            var rewardQuantityPrevPrevPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-2]['quantity'])
+
+                            var rewardTimePrevPrev = changes_logs_list[changes_logs_list.length-1]['time_checked']
+                            var rewardTimePrevPrevPrev = changes_logs_list[changes_logs_list.length-2]['time_checked']
+
+
+                            rewardElement.find('.updated_two_quantity_value')[0].innerText = rewardQuantityPrevPrev
+                            rewardElement.find('.updated_three_quantity_value')[0].innerText = rewardQuantityPrevPrevPrev
+
+                            
+                            //Time inbetween data
+                            const timeFormat1 = formatDate(new Date(rewardTimePrevPrev));
+                            const timeFormat2 = formatDate(new Date(rewardTimePrevPrevPrev));
+                            rewardElement.find('.updated_two_time_value')[0].innerText = timeFormat1
+                            rewardElement.find('.updated_three_time_value')[0].innerText = timeFormat2
+                        }else{
+                            var rewardQuantityPrevPrevPrev = numberWithCommas(changes_logs_list[changes_logs_list.length-1]['quantity'])
+                            var rewardTimePrevPrevPrev = changes_logs_list[changes_logs_list.length-1]['time_checked']
+                            rewardElement.find('.updated_three_quantity_value')[0].innerText = rewardQuantityPrevPrevPrev
+                            
+                            //Time inbetween data
+                            rewardElement.find('.updated_three_time_value')[0].innerText = rewardQuantityPrevPrevPrev
+
+                            const timeFormat = formatDate(new Date(rewardTimePrevPrevPrev));
+                            rewardElement.find('.updated_three_time_value')[0].innerText = timeFormat
+
+                        }
+                        checkToAnimate(rewardElement);
+                    }else{
+                        rewardQuantity = rewardLogs['quantity'];
+                    }
+                    
+                    rewardElement.find('.quantity_summary')[0].innerText = makeFriendly(rewardQuantity)
+                    rewardQuantity = numberWithCommas(rewardQuantity);
+                    rewardElement.find('.quantity_value')[0].innerHTML=`${rewardQuantity}<span>Quantity</span>`
+                }
+                loadedNotImportantDatas=true;
+            }
+            function checkToAnimate(rewardElement){
+                if(newChanges){
+                    $( rewardElement ).parent()[0].animate({
+                        backgroundColor: "#4d4d4d"
+                    }, 2000 );
+                    newChanges=false;
+                }
+            }
+            async function requestData(){
+                $.ajax({
+                    type: 'GET',
+                    url: '\\file_read',
+                    success: function (jsonData) {
+                        data_json = jsonData
+                    }
+                });
+            }
+            function prepareDatas(){
+                
+                var data = '                    <div class="reward_id">1</div>'+
+                '                    <div class="front">'+
+                '                        <img class="main_image" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="Reward Image">'+
+                '                        <h3 class="reward_name">- - - -</h3>'+
+                '                        <div class="status">'+
+                '                        <p class="quantity_summary">- -</p>'+
+                '                        <div class="updates">'+
+                '                            <img class="updated_one_icon" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                            <img class="updated_two_icon" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                            <img class="updated_three_icon" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                        </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="back">'+
+                '                        <div class="reward_info">'+
+                '                        <p class="quantity_value">- - - - <span class="lbl">Quantity</span></p>'+
+                '                        <p class="update_value">- - - -<span>Updates</span></p>'+
+                '                        </div>'+
+                '                        <button class="btn">See more history</button>'+
+                '                        <div class="updates">'+
+                '                           <div class="updated_one">'+
+                '                               <div class="icon">'+
+                '                               <img class="updated_one_img" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                               </div>'+
+                '                               <p class="updated_one_quantity_value">- - - -</p>'+
+                '                               <p class="updated_one_time_value">- - - -</p>'+
+                '                           </div>'+
+                '                           <div class="updated_two">'+
+                '                               <div class="icon">'+
+                '                               <img class="updated_two_img" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                               </div>'+
+                '                               <p class="updated_two_quantity_value">- - - -</p>'+
+                '                               <p class="updated_two_time_value">- - - -</p>'+
+                '                           </div>'+
+                '                           <div class="updated_three">'+
+                '                               <div class="icon">'+
+                '                               <img class="updated_three_img" src="https://www.winston.ph/assets/raffles/prize-2.png" alt="">'+
+                '                               </div>'+
+                '                               <p class="updated_three_quantity_value">- - - -</p>'+
+                '                               <p class="updated_three_time_value">- - - -</p>'+
+                '                           </div>'+
+                '                        </div>'+
+                '                    </div>'+
+                '                    <div class="backgroundWrapper"></div>'
+                var data_list = '';
+                let reward_id = [5,11,12,1,4,6,9,10,14,8,7,13,15]
+                for(var i=0;i<reward_id.length;i++){
+                    var li = document.createElement('li');
+                    var reward = document.createElement('div');
+                    reward.className = "reward"
+                    reward.id = "reward_"+(reward_id[i]);
+                    reward.innerHTML = data;
+                    reward.getElementsByClassName('btn')[0].setAttribute('id', 'reward_btn_'+(reward_id[i]))
+                    reward.getElementsByClassName('btn')[0].addEventListener('click', event=>{
+                        prepareDownload(event)
+                    }); 
+                    reward.getElementsByClassName("reward_id")[0].innerText=i+1;
+                    li.appendChild(reward);
+                    document.getElementById("data_list").appendChild(li);
+                }
+                
+            }
+            function numberWithCommas(x) {
+                return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+            function formatDate(date) {
+                var hours = date.getHours();
+                var minutes = date.getMinutes();
+                var sec = date.getSeconds();
+                var ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                minutes = minutes < 10 ? '0'+minutes : minutes;
+                var strTime = hours + ':' + minutes+  ":" +  sec +ampm ;
+                // return (date.getMonth()+1) + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
+                return strTime;
+            }
+            function formatDate2(date) {
+                var hours = date.getHours();
+                var minutes = date.getMinutes();
+                var sec = date.getSeconds();
+                var ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // the hour '0' should be '12'
+                minutes = minutes < 10 ? '0'+minutes : minutes;
+                var strTime = hours + ':' + minutes+  ":" +  sec +ampm ;
+                return (date.getMonth()+1) + "/" + date.getDate() + "/" + date.getFullYear() + "  " + strTime;
+            }
+
+            
+            function timeSince(date) {
+                var seconds = Math.floor((new Date() - date) / 1000);
+
+                var interval = seconds / 31536000;
+
+                if (interval > 1) {
+                    return Math.floor(interval) + " yr";
+                }
+                interval = seconds / 2592000;
+                if (interval > 1) {
+                    return Math.floor(interval) + " mo";
+                }
+                interval = seconds / 86400;
+                if (interval > 1) {
+                    return Math.floor(interval) + " dy";
+                }
+                interval = seconds / 3600;
+                if (interval > 1) {
+                    return Math.floor(interval) + " hr";
+                }
+                interval = seconds / 60;
+                if (interval > 1) {
+                    return Math.floor(interval) + " min";
+                }
+                    return Math.floor(seconds) + " sec";
+            }
+            function intlFormat(num)
+            {
+            return new Intl.NumberFormat().format(Math.round(num*10)/10);
+            }
+            function makeFriendly(num)
+            {
+            if(num >= 1000000)
+                return intlFormat(num/1000000)+'M';
+            if(num >= 1000)
+                return intlFormat(num/1000)+'k';
+            return intlFormat(num);
+            }
+        </script>
+        
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    </body>
+</html>
